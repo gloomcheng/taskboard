@@ -41,13 +41,11 @@ React 是一個用於構建用戶界面的 JavaScript 庫：
 'use client';
 
 // 導入必要的模組
-// Next.js 的 Image 組件提供自動圖片優化
-// 包括：自動調整大小、延遲加載、WebP 格式支持等
-import Image from "next/image";
+import Link from "next/link";
 
 // useState 是 React 最基本的 Hook
 // 用於在函數組件中管理狀態
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // 導入自定義組件
 // 這展示了 React 的組件化特性
@@ -67,6 +65,15 @@ export default function Home() {
   // setNewTask 用於更新輸入框的值
   const [newTask, setNewTask] = useState('');
 
+  const [nextId, setNextId] = useState(1);
+
+  useEffect(() => {
+    const savedTasks = JSON.parse(localStorage.getItem('tasks')) || [];
+    setTasks(savedTasks);
+    const maxId = savedTasks.reduce((max, task) => Math.max(max, task.id), 0);
+    setNextId(maxId + 1);
+  }, []);
+
   // 添加任務的函數
   // 在 React 中，我們通常將事件處理函數定義在組件內部
   const addTask = () => {
@@ -77,7 +84,12 @@ export default function Home() {
     // 使用展開運算符創建新數組
     // 這是 React 中確保狀態不可變性的重要概念
     // 直接修改狀態（如 tasks.push()）是不好的做法
-    const updatedTasks = [...tasks, newTask];
+    const newTaskObj = {
+      id: nextId,
+      title: newTask,
+      description: '',
+    };
+    const updatedTasks = [...tasks, newTaskObj];
     
     // 使用 setState 更新狀態
     // 這會觸發 React 的重新渲染機制
@@ -87,7 +99,16 @@ export default function Home() {
     
     // 清空輸入框
     setNewTask('');
+
+    setNextId(nextId + 1);
+    localStorage.setItem('tasks', JSON.stringify(updatedTasks));
   };
+
+  const handleDelete = (index) => {
+    const newTasks = tasks.filter((_, i) => i !== index);
+    setTasks(newTasks);
+    localStorage.setItem('tasks', JSON.stringify(newTasks));
+  }
 
   // 返回 JSX
   // JSX 是 JavaScript 的語法擴展，允許在 JS 中編寫類似 HTML 的代碼
@@ -95,7 +116,7 @@ export default function Home() {
     // 使用 Tailwind CSS 進行樣式設置
     // Tailwind 是一個實用優先的 CSS 框架
     // 更多資訊：https://tailwindcss.com/docs
-    <main className="p-4">
+    <main className="p-4 max-w-md mx-auto">
       <h1 className="text-2xl font-bold">Task Board</h1>
 
       {/* 輸入區域 */}
@@ -133,7 +154,7 @@ export default function Home() {
         - 這實現了關注點分離和代碼重用
         更多資訊：https://react.dev/learn/passing-props-to-a-component
       */}
-      <TaskList tasks={tasks} />
+      <TaskList tasks={tasks} onDelete={handleDelete} />
     </main>
   );
 }
